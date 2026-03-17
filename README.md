@@ -20,6 +20,14 @@
 
 ## 快速开始
 
+方式一：直接在线下载并执行（快速）
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/Oakshen/bash_script/main/setup-omz.sh)
+```
+
+方式二：克隆仓库后执行（便于管理多个脚本）
+
 ```bash
 git clone https://github.com/<your-username>/bash_script.git
 cd bash_script
