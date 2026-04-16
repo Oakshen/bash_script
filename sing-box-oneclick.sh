@@ -226,8 +226,7 @@ ${SUDO} tee "${CONFIG_PATH}" >/dev/null <<JSONEOF
       ],
       "auto_route": true,
       "strict_route": true,
-      "stack": "system",
-      "sniff": true
+      "stack": "system"
     },
     {
       "type": "mixed",
@@ -245,6 +244,9 @@ ${OUTBOUND_JSON},
   ],
   "route": {
     "rules": [
+      {
+        "action": "sniff"
+      },
       {
         "protocol": "dns",
         "action": "hijack-dns"
