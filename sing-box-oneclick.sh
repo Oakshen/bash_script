@@ -81,79 +81,65 @@ parse_vless_uri() {
 }
 
 build_outbound_json() {
-  local tls_block=""
-  local transport_block=""
-  local flow_line=""
+  local NL=$'\n'
+  local json=""
+  json+="    {${NL}"
+  json+="      \"type\": \"vless\",${NL}"
+  json+="      \"tag\": \"proxy\",${NL}"
+  json+="      \"server\": \"${VLESS_SERVER}\",${NL}"
+  json+="      \"server_port\": ${VLESS_PORT},${NL}"
+  json+="      \"uuid\": \"${VLESS_UUID}\""
 
   if [[ -n "$VLESS_FLOW" ]]; then
-    flow_line="$(printf '      "flow": "%s",\n' "$VLESS_FLOW")"
+    json+=",${NL}      \"flow\": \"${VLESS_FLOW}\""
   fi
 
   if [[ "$VLESS_SECURITY" == "reality" ]]; then
-    tls_block=$(cat <<TLSEOF
-      "tls": {
-        "enabled": true,
-        "server_name": "${VLESS_SNI}",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "${VLESS_FP:-chrome}"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "${VLESS_PBK}",
-          "short_id": "${VLESS_SID}"
-        }
-      }
-TLSEOF
-)
+    json+=",${NL}      \"tls\": {${NL}"
+    json+="        \"enabled\": true,${NL}"
+    json+="        \"server_name\": \"${VLESS_SNI}\",${NL}"
+    json+="        \"utls\": {${NL}"
+    json+="          \"enabled\": true,${NL}"
+    json+="          \"fingerprint\": \"${VLESS_FP:-chrome}\"${NL}"
+    json+="        },${NL}"
+    json+="        \"reality\": {${NL}"
+    json+="          \"enabled\": true,${NL}"
+    json+="          \"public_key\": \"${VLESS_PBK}\",${NL}"
+    json+="          \"short_id\": \"${VLESS_SID}\"${NL}"
+    json+="        }${NL}"
+    json+="      }"
   elif [[ "$VLESS_SECURITY" == "tls" ]]; then
-    tls_block=$(cat <<TLSEOF
-      "tls": {
-        "enabled": true,
-        "server_name": "${VLESS_SNI}"${VLESS_FP:+,
-        "utls": {
-          "enabled": true,
-          "fingerprint": "${VLESS_FP}"
-        }}
-      }
-TLSEOF
-)
+    json+=",${NL}      \"tls\": {${NL}"
+    json+="        \"enabled\": true,${NL}"
+    json+="        \"server_name\": \"${VLESS_SNI}\""
+    if [[ -n "$VLESS_FP" ]]; then
+      json+=",${NL}        \"utls\": {${NL}"
+      json+="          \"enabled\": true,${NL}"
+      json+="          \"fingerprint\": \"${VLESS_FP}\"${NL}"
+      json+="        }"
+    fi
+    json+="${NL}      }"
   fi
 
   if [[ "$VLESS_TYPE" == "ws" ]]; then
-    transport_block=$(cat <<TREOF
-      "transport": {
-        "type": "ws",
-        "path": "${VLESS_PATH:-/}"${VLESS_HOST:+,
-        "headers": {
-          "Host": "${VLESS_HOST}"
-        }}
-      }
-TREOF
-)
+    json+=",${NL}      \"transport\": {${NL}"
+    json+="        \"type\": \"ws\",${NL}"
+    json+="        \"path\": \"${VLESS_PATH:-/}\""
+    if [[ -n "$VLESS_HOST" ]]; then
+      json+=",${NL}        \"headers\": {${NL}"
+      json+="          \"Host\": \"${VLESS_HOST}\"${NL}"
+      json+="        }"
+    fi
+    json+="${NL}      }"
   elif [[ "$VLESS_TYPE" == "grpc" ]]; then
-    transport_block=$(cat <<TREOF
-      "transport": {
-        "type": "grpc",
-        "service_name": "${VLESS_SERVICE_NAME}"
-      }
-TREOF
-)
+    json+=",${NL}      \"transport\": {${NL}"
+    json+="        \"type\": \"grpc\",${NL}"
+    json+="        \"service_name\": \"${VLESS_SERVICE_NAME}\"${NL}"
+    json+="      }"
   fi
 
-  local trailing_parts=""
-  [[ -n "$tls_block" ]] && trailing_parts="${trailing_parts},\n${tls_block}"
-  [[ -n "$transport_block" ]] && trailing_parts="${trailing_parts},\n${transport_block}"
-
-  printf '    {
-      "type": "vless",
-      "tag": "proxy",
-      "server": "%s",
-      "server_port": %s,
-      "uuid": "%s",\n%s%b
-    }' \
-    "$VLESS_SERVER" "$VLESS_PORT" "$VLESS_UUID" \
-    "$flow_line" "$trailing_parts"
+  json+="${NL}    }"
+  printf '%s' "$json"
 }
 
 echo "======================================"
